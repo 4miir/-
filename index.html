@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>حاسبة المصاريف والديون</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-blue: #3b82f6;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Tajawal', -apple-system, BlinkMacSystemFont, sans-serif;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at top right, rgba(59, 130, 246, 0.15), transparent 40%),
+                              radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.15), transparent 40%);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: calc(15px + env(safe-area-inset-top)) 12px calc(20px + env(safe-area-inset-bottom)) 12px;
+            display: flex;
+            justify-content: center;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 650px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #60a5fa, #a7f3d0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Overall Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            padding: 10px 8px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        }
+
+        .stat-card h3 {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 3px;
+        }
+
+        .stat-card p {
+            font-size: 0.95rem;
+            font-weight: 700;
+        }
+
+        .stat-card.give p { color: var(--accent-red); }
+        .stat-card.take p { color: var(--accent-green); }
+        .stat-card.total p { color: var(--accent-blue); }
+
+        .section-header {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin: 15px 0 8px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Summary Table Styling */
+        .table-container {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        }
+
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: right;
+            font-size: 0.82rem;
+        }
+
+        .summary-table th {
+            background: rgba(15, 23, 42, 0.6);
+            color: var(--text-muted);
+            padding: 10px 8px;
+            font-weight: 700;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.75rem;
+        }
+
+        .summary-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            vertical-align: middle;
+        }
+
+        .summary-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .text-give { color: var(--accent-red); font-weight: 700; }
+        .text-take { color: var(--accent-green); font-weight: 700; }
+        .text-neutral { color: var(--text-muted); font-weight: 700; }
+
+        .badge-status {
+            display: inline-block;
+            padding: 3px 6px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        .badge-give { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); }
+        .badge-take { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); }
+
+        .btn-pay-table {
+            padding: 5px 8px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-main);
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn-pay-table:active {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Form Styling */
+        .form-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            border-radius: 16px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        }
+
+        .form-group {
+            margin-bottom: 10px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            color: #fff;
+            font-size: 16px !important;
+            outline: none;
+            transition: all 0.3s;
+            -webkit-appearance: none;
+        }
+
+        .form-control:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+        }
+
+        .type-selector {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .type-btn {
+            flex: 1;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            background: rgba(15, 23, 42, 0.6);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s;
+            text-align: center;
+            -webkit-appearance: none;
+        }
+
+        .type-btn.active-give {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: var(--accent-red);
+            color: var(--accent-red);
+        }
+
+        .type-btn.active-take {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            transition: 0.2s;
+            -webkit-appearance: none;
+        }
+
+        .btn-submit:active {
+            transform: scale(0.98);
+        }
+
+        /* Entries List */
+        .entry-item {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 10px 12px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .entry-item::before {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+        }
+
+        .entry-item.give::before { background: var(--accent-red); }
+        .entry-item.take::before { background: var(--accent-green); }
+
+        .entry-info h4 {
+            font-size: 0.85rem;
+            margin-bottom: 2px;
+        }
+
+        .entry-info p {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .entry-amount {
+            text-align: left;
+        }
+
+        .entry-amount .val {
+            font-size: 0.95rem;
+            font-weight: 700;
+        }
+
+        .entry-item.give .val { color: var(--accent-red); }
+        .entry-item.take .val { color: var(--accent-green); }
+
+        .btn-delete {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.75rem;
+            margin-top: 2px;
+            padding: 4px 6px;
+            border-radius: 4px;
+            -webkit-appearance: none;
+        }
+
+        .btn-delete:active {
+            color: var(--accent-red);
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 15px;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        /* Modal Popup */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: 0.3s ease;
+            padding: 15px;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-card {
+            background: #1e293b;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 360px;
+            padding: 18px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-title {
+            font-size: 1rem;
+            font-weight: 800;
+            margin-bottom: 4px;
+            color: var(--text-main);
+        }
+
+        .modal-subtitle {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .btn-modal {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.2s;
+            -webkit-appearance: none;
+        }
+
+        .btn-modal.primary {
+            background: var(--accent-green);
+            color: white;
+        }
+
+        .btn-modal.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>سجل الديون والمستحقات 💸</h1>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+        <div class="stat-card give">
+            <h3>عليّ ادفعه</h3>
+            <p id="total-give">0</p>
+        </div>
+        <div class="stat-card take">
+            <h3>لي استلمه</h3>
+            <p id="total-take">0</p>
+        </div>
+        <div class="stat-card total">
+            <h3>الصافي</h3>
+            <p id="net-total">0</p>
+        </div>
+    </div>
+
+    <!-- Table Summary per Person -->
+    <div class="section-header">
+        <span>جدول مستحقات الأشخاص</span>
+    </div>
+    
+    <div class="table-container">
+        <table class="summary-table">
+            <thead>
+                <tr>
+                    <th>الاسم</th>
+                    <th>تدفعلة (عليّ)</th>
+                    <th>تاخذ منه (لي)</th>
+                    <th>الصافي والعملية</th>
+                    <th>إجراء</th>
+                </tr>
+            </thead>
+            <tbody id="people-summary-table">
+                <!-- Data inserted dynamically -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Form -->
+    <div class="form-card">
+        <form id="debt-form" action="javascript:void(0);">
+            <div class="type-selector">
+                <div class="type-btn active-give" id="btn-type-give" onclick="setType('give')">عليّ (أنا أدفعه)</div>
+                <div class="type-btn" id="btn-type-take" onclick="setType('take')">لي (هو يدفعه)</div>
+            </div>
+
+            <div class="form-group">
+                <label>اسم صاحبك</label>
+                <input type="text" id="name" class="form-control" placeholder="مثال: محمد" autocomplete="off" required>
+            </div>
+
+            <div class="form-group">
+                <label>المبلغ</label>
+                <input type="number" step="any" id="amount" class="form-control" inputmode="decimal" placeholder="0.00" autocomplete="off" required>
+            </div>
+
+            <div class="form-group">
+                <label>السبب / ملاحظات</label>
+                <input type="text" id="reason" class="form-control" placeholder="مثال: قطية العشاء / قهوة" autocomplete="off" required>
+            </div>
+
+            <button type="submit" class="btn-submit">حفظ المعاملة</button>
+        </form>
+    </div>
+
+    <!-- Search & List -->
+    <div class="form-group" style="margin-bottom: 12px;">
+        <input type="text" id="search" class="form-control" placeholder="بحث باسم صاحبك..." autocomplete="off" oninput="renderEntries()">
+    </div>
+
+    <div class="section-header">
+        <span>سجل المعاملات التفصيلي</span>
+    </div>
+
+    <div id="entries-list"></div>
+</div>
+
+<!-- Pay/Deduct Modal -->
+<div class="modal-overlay" id="pay-modal">
+    <div class="modal-card">
+        <div class="modal-title" id="modal-person-name">اسم الشخص</div>
+        <div class="modal-subtitle" id="modal-person-desc">الرصيد الحالي...</div>
+
+        <div class="form-group">
+            <label>مبلغ الخصم / الدفع</label>
+            <input type="number" step="any" id="modal-pay-amount" class="form-control" inputmode="decimal" placeholder="0.00" autocomplete="off">
+        </div>
+
+        <div class="modal-actions">
+            <button type="button" class="btn-modal secondary" onclick="closeModal()">إلغاء</button>
+            <button type="button" class="btn-modal primary" onclick="submitDeduction()">تسديد المبلغ</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let entries = JSON.parse(localStorage.getItem('my_debts_data')) || [];
+    let currentType = 'give';
+    let selectedPersonName = null;
+
+    document.addEventListener('touchend', function (event) {
+        var now = (new Date()).getTime();
+        if (now - (window.lastTouchEnd || 0) <= 300) {
+            event.preventDefault();
+        }
+        window.lastTouchEnd = now;
+    }, false);
+
+    function setType(type) {
+        currentType = type;
+        const btnGive = document.getElementById('btn-type-give');
+        const btnTake = document.getElementById('btn-type-take');
+
+        if(type === 'give') {
+            btnGive.className = 'type-btn active-give';
+            btnTake.className = 'type-btn';
+        } else {
+            btnGive.className = 'type-btn';
+            btnTake.className = 'type-btn active-take';
+        }
+    }
+
+    document.getElementById('debt-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const nameInput = document.getElementById('name');
+        const amountInput = document.getElementById('amount');
+        const reasonInput = document.getElementById('reason');
+
+        const name = nameInput.value.trim();
+        const amount = parseFloat(amountInput.value);
+        const reason = reasonInput.value.trim();
+
+        if(!name || isNaN(amount) || amount <= 0 || !reason) return;
+
+        const entry = {
+            id: Date.now(),
+            name: name,
+            amount: amount,
+            reason: reason,
+            type: currentType,
+            date: new Date().toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' })
+        };
+
+        entries.unshift(entry);
+        saveAndRender();
+
+        nameInput.value = '';
+        amountInput.value = '';
+        reasonInput.value = '';
+        
+        nameInput.blur();
+        amountInput.blur();
+        reasonInput.blur();
+    });
+
+    function deleteEntry(id) {
+        entries = entries.filter(e => e.id !== id);
+        saveAndRender();
+    }
+
+    function openPayModal(personName) {
+        selectedPersonName = personName;
+        const personData = getPeopleTotals()[personName];
+        if(!personData) return;
+
+        document.getElementById('modal-person-name').innerText = personName;
+        
+        const net = personData.net;
+        let desc = '';
+        if (net > 0) {
+            desc = `المطلوب منه استلامه حالياً: ${net.toFixed(2)}`;
+        } else if (net < 0) {
+            desc = `المطلوب منك دفعه له حالياً: ${Math.abs(net).toFixed(2)}`;
+        } else {
+            desc = `الحساب متصفّر بالكامل.`;
+        }
+        
+        document.getElementById('modal-person-desc').innerText = desc;
+        document.getElementById('modal-pay-amount').value = Math.abs(net) > 0 ? Math.abs(net).toFixed(2) : '';
+        
+        document.getElementById('pay-modal').classList.add('active');
+    }
+
+    function closeModal() {
+        document.getElementById('pay-modal').classList.remove('active');
+        document.getElementById('modal-pay-amount').blur();
+        selectedPersonName = null;
+    }
+
+    function submitDeduction() {
+        if(!selectedPersonName) return;
+
+        const payAmountInput = document.getElementById('modal-pay-amount');
+        const payAmount = parseFloat(payAmountInput.value);
+        if(isNaN(payAmount) || payAmount <= 0) return;
+
+        const personData = getPeopleTotals()[selectedPersonName];
+        if(!personData) return;
+
+        const net = personData.net;
+        // إذا كان الصافي موجب (لي عنده)، التسديد يقلل مستحقاتي (عليّ)
+        // إذا كان الصافي سالب (عليّ له)، التسديد يزيد مدفوعاتي له (لي)
+        let newType = net >= 0 ? 'give' : 'take';
+
+        const entry = {
+            id: Date.now(),
+            name: personData.displayName,
+            amount: payAmount,
+            reason: 'تسديد / تسوية حساب',
+            type: newType,
+            date: new Date().toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' })
+        };
+
+        entries.unshift(entry);
+        saveAndRender();
+        closeModal();
+    }
+
+    function getPeopleTotals() {
+        const peopleMap = {};
+
+        entries.forEach(e => {
+            const normalized = e.name.trim().toLowerCase();
+            if(!peopleMap[normalized]) {
+                peopleMap[normalized] = {
+                    displayName: e.name.trim(),
+                    take: 0,
+                    give: 0
+                };
+            }
+            if(e.type === 'take') peopleMap[normalized].take += e.amount;
+            if(e.type === 'give') peopleMap[normalized].give += e.amount;
+        });
+
+        Object.keys(peopleMap).forEach(key => {
+            peopleMap[key].net = peopleMap[key].take - peopleMap[key].give;
+        });
+
+        return peopleMap;
+    }
+
+    function saveAndRender() {
+        localStorage.setItem('my_debts_data', JSON.stringify(entries));
+        renderEntries();
+    }
+
+    function renderEntries() {
+        const tableBody = document.getElementById('people-summary-table');
+        const listEl = document.getElementById('entries-list');
+        const searchQuery = document.getElementById('search').value.toLowerCase().trim();
+        
+        tableBody.innerHTML = '';
+        listEl.innerHTML = '';
+
+        let totalGive = 0;
+        let totalTake = 0;
+
+        entries.forEach(e => {
+            if(e.type === 'give') totalGive += e.amount;
+            if(e.type === 'take') totalTake += e.amount;
+        });
+
+        document.getElementById('total-give').innerText = totalGive.toFixed(2);
+        document.getElementById('total-take').innerText = totalTake.toFixed(2);
+        
+        const net = totalTake - totalGive;
+        const netEl = document.getElementById('net-total');
+        netEl.innerText = (net > 0 ? '+' : '') + net.toFixed(2);
+        netEl.style.color = net >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+
+        const people = getPeopleTotals();
+        const peopleKeys = Object.keys(people);
+
+        if(peopleKeys.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="5" class="empty-state">لا يوجد أشخاص مسجلين</td></tr>';
+        } else {
+            peopleKeys.forEach(key => {
+                const p = people[key];
+                
+                let netText = '';
+                let badgeClass = '';
+
+                if (p.net > 0) {
+                    netText = `تاخذ منه ${p.net.toFixed(2)}`;
+                    badgeClass = 'badge-take';
+                } else if (p.net < 0) {
+                    netText = `تدفعلة ${Math.abs(p.net).toFixed(2)}`;
+                    badgeClass = 'badge-give';
+                } else {
+                    netText = 'متصفّر 0.00';
+                    badgeClass = 'text-neutral';
+                }
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${p.displayName}</strong></td>
+                    <td class="text-give">${p.give > 0 ? p.give.toFixed(2) : '-'}</td>
+                    <td class="text-take">${p.take > 0 ? p.take.toFixed(2) : '-'}</td>
+                    <td><span class="badge-status ${badgeClass}">${netText}</span></td>
+                    <td><button type="button" class="btn-pay-table" onclick="openPayModal('${p.displayName.replace(/'/g, "\\'")}')">تسديد</button></td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        const filtered = entries.filter(e => e.name.toLowerCase().includes(searchQuery));
+
+        if(filtered.length === 0) {
+            listEl.innerHTML = '<div class="empty-state">لا توجد معاملات مسجلة</div>';
+            return;
+        }
+
+        filtered.forEach(item => {
+            const itemEl = document.createElement('div');
+            itemEl.className = `entry-item ${item.type}`;
+            
+            itemEl.innerHTML = `
+                <div class="entry-info">
+                    <h4>${item.name}</h4>
+                    <p>${item.reason} • <span style="opacity:0.7">${item.date}</span></p>
+                </div>
+                <div class="entry-amount">
+                    <div class="val">${item.type === 'give' ? '-' : '+'}${item.amount.toFixed(2)}</div>
+                    <button type="button" class="btn-delete" onclick="deleteEntry(${item.id})">حذف</button>
+                </div>
+            `;
+            listEl.appendChild(itemEl);
+        });
+    }
+
+    renderEntries();
+</script>
+</body>
+</html>
